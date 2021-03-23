@@ -1,0 +1,29 @@
+plugins {
+    id 'application'
+    id 'org.jetbrains.kotlin.jvm' version '1.4.10'
+    id "org.jetbrains.dokka" version "1.4.30"
+}
+
+group "net.bmgames"
+version "0.0.1"
+mainClassName = "io.ktor.server.netty.EngineMain"
+
+repositories {
+    mavenLocal()
+    jcenter()
+    maven { url "https://kotlin.bintray.com/kotlin-js-wrappers" }
+    maven { url "https://kotlin.bintray.com/ktor" }
+}
+
+dependencies {
+    implementation "io.ktor:ktor-server-core:$ktor_version"
+    implementation "io.ktor:ktor-auth:$ktor_version"
+    implementation "io.ktor:ktor-websockets:$ktor_version"
+    implementation "io.ktor:ktor-html-builder:$ktor_version"
+    implementation "org.jetbrains:kotlin-css-jvm:1.0.0-pre.129-kotlin-1.4.20"
+    implementation "io.ktor:ktor-server-netty:$ktor_version"
+    implementation "ch.qos.logback:logback-classic:$logback_version"
+    testImplementation "io.ktor:ktor-server-tests:$ktor_version"
+    compile 'com.auth0:mvc-auth-commons:1.+'
+    implementation "io.ktor:ktor-client-apache:$ktor_version"
+}
