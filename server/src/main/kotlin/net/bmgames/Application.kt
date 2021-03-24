@@ -1,24 +1,24 @@
 package net.bmgames
 
-import io.ktor.routing.*
-import io.ktor.http.*
-import io.ktor.auth.*
-import io.ktor.util.*
-import io.ktor.http.cio.websocket.*
-import io.ktor.websocket.*
-import java.time.*
-import io.ktor.html.*
-import kotlinx.html.*
-import kotlinx.css.*
 import io.ktor.application.*
+import io.ktor.auth.*
 import io.ktor.features.*
-import io.ktor.response.*
+import io.ktor.html.*
+import io.ktor.http.*
+import io.ktor.http.cio.websocket.*
 import io.ktor.request.*
-import java.util.*
-import kotlin.collections.LinkedHashSet
+import io.ktor.response.*
+import io.ktor.routing.*
+import io.ktor.serialization.*
+import io.ktor.server.netty.*
+import io.ktor.websocket.*
+import kotlinx.css.CSSBuilder
+import kotlinx.html.*
+import java.time.Duration
+import kotlinx.serialization.Serializable
 
 fun main(args: Array<String>): Unit =
-    io.ktor.server.netty.EngineMain.main(args)
+    EngineMain.main(args)
 
 /**
  * Please note that you can use any other name instead of *module*.
@@ -28,7 +28,12 @@ fun main(args: Array<String>): Unit =
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
 
-    install(CORS) {
+    install(ContentNegotiation) {
+        json()
+    }
+
+    //Wird für Browserclient benötigt, wenn dieser auf anderer URL/Port läuft als der Webserver
+    /*install(CORS) {
         method(HttpMethod.Options)
         method(HttpMethod.Put)
         method(HttpMethod.Delete)
@@ -36,7 +41,7 @@ fun Application.module(testing: Boolean = false) {
         header(HttpHeaders.Authorization)
         allowCredentials = true
         anyHost() // @TODO: Don't do this in production if possible. Try to limit it.
-    }
+    }*/
 
     install(WebSockets) {
         pingPeriod = Duration.ofSeconds(15)
@@ -45,11 +50,19 @@ fun Application.module(testing: Boolean = false) {
         masking = false
     }
 
+
+    /*
+    * Websockets
+    */
     routing {
         installChatServer()
     }
 
     setupAuth()
+
+    /*
+    * HTML
+    */
     routing {
         get("/") {
             call.respondHtml {
@@ -68,6 +81,22 @@ fun Application.module(testing: Boolean = false) {
                 }
             }
         }
+
+        /*
+        * JSON
+        */
+        get("/json") {
+            call.respond(Customer(1, "Jet", "Brains"))
+        }
+        post("/json") {
+            val customer = call.receive<Customer>()
+            call.respond(customer)
+        }
+
+
+        /*
+        * Auth
+        */
         authenticate("auth0") {
             route("login") {
                 param("error") {
@@ -103,20 +132,14 @@ fun Application.module(testing: Boolean = false) {
     }
 }
 
+
+@Serializable
+data class Customer(val id: Int, val firstName: String, val lastName: String)
+
 suspend inline fun ApplicationCall.respondCss(builder: CSSBuilder.() -> Unit) {
     this.respondText(CSSBuilder().apply(builder).toString(), ContentType.Text.CSS)
 }
-/*
 
-private fun <T : Any> ApplicationCall.redirectUrl(t: T, secure: Boolean = true): String {
-    val hostPort = request.host()!! + request.port().let { port -> if (port == 80) "" else ":$port" }
-    val protocol = when {
-        secure -> "https"
-        else -> "http"
-    }
-    return "$protocol://$hostPort${application.locations.href(t)}"
-}
-*/
 private suspend fun ApplicationCall.loginFailedPage(errors: List<String>) {
     respondHtml {
         head {
@@ -151,69 +174,3 @@ private suspend fun ApplicationCall.loggedInSuccessResponse(callback: OAuthAcces
         }
     }
 }
-/*
-    routing {
-        get("/") {
-            call.respondText("Hello World!")
-        }
-    }
-    routing {
-        webSocket("/") { // websocketSession
-            for (frame in incoming) {
-                when (frame) {
-                    is Frame.Text -> {
-                        val text = frame.readText()
-                        outgoing.send(Frame.Text("YOU SAID: $text"))
-                        if (text.equals("bye", ignoreCase = true)) {
-                            close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    routing {
-        get("/html-dsl") {
-            call.respondHtml {
-                head {
-                    link(rel = "stylesheet", href = "/styles.css", type = "text/css")
-                }
-                body {
-                    h0 { +"HTML" }
-                    ul {
-                        for (n in 0..10) {
-                            li { +"$n" }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    routing {
-        get("/styles.css") {
-            call.respondCss {
-                body {
-                    backgroundColor = Color.darkBlue
-                    margin(-1.px)
-                }
-                rule("h0.page-title") {
-                    color = Color.white
-                }
-            }
-        }
-    }
-    routing {
-        get("/html-css-dsl") {
-            call.respondHtml {
-                head {
-                    link(rel = "stylesheet", href = "/styles.css", type = "text/css")
-                }
-                body {
-                    h0(classes = "page-title") {
-                        +"Hello from Ktor!"
-                    }
-                }
-            }
-        }
-    }*/
