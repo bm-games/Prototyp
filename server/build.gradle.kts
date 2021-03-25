@@ -1,6 +1,7 @@
 val ktor_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
+val arrow_version: String by project
 
 plugins {
     application
@@ -20,7 +21,7 @@ repositories {
     jcenter()
     maven { url = uri("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/kotlin-js-wrappers") }
     maven { url = uri("https://kotlin.bintray.com/ktor") }
-    maven { url = uri("https://dl.bintray.com/47deg/helios") }
+    maven { url = uri("https://dl.bintray.com/arrow-kt/arrow-kt/") }
 }
 
 dependencies {
@@ -41,5 +42,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.1.0")
 
     implementation ("com.auth0:mvc-auth-commons:1.+")
+
+    implementation("io.arrow-kt:arrow-optics:$arrow_version")
+    implementation("io.arrow-kt:arrow-syntax:$arrow_version")
+    kapt("io.arrow-kt:arrow-meta:$arrow_version")
 
 }

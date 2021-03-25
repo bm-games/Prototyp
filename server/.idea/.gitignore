@@ -9,3 +9,4 @@
 
 #sensitive env vars
 runConfigurations/ApplicationKt.xml
+/inspectionProfiles/Project_Default.xml
