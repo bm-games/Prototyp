@@ -14,8 +14,8 @@ import io.ktor.server.netty.*
 import io.ktor.websocket.*
 import kotlinx.css.CSSBuilder
 import kotlinx.html.*
+import net.bmgames.user.User
 import java.time.Duration
-import kotlinx.serialization.Serializable
 
 fun main(args: Array<String>): Unit =
     EngineMain.main(args)
@@ -86,13 +86,12 @@ fun Application.module(testing: Boolean = false) {
         * JSON
         */
         get("/json") {
-            call.respond(Customer(1, "Jet", "Brains"))
+            call.respond(User("test@test.de"))
         }
         post("/json") {
-            val customer = call.receive<Customer>()
+            val customer = call.receive<User>()
             call.respond(customer)
         }
-
 
         /*
         * Auth
@@ -133,8 +132,6 @@ fun Application.module(testing: Boolean = false) {
 }
 
 
-@Serializable
-data class Customer(val id: Int, val firstName: String, val lastName: String)
 
 suspend inline fun ApplicationCall.respondCss(builder: CSSBuilder.() -> Unit) {
     this.respondText(CSSBuilder().apply(builder).toString(), ContentType.Text.CSS)
