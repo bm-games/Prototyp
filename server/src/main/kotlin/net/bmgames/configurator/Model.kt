@@ -1,24 +1,30 @@
 package net.bmgames.configurator
 
+import arrow.core.NonEmptyList
+import arrow.core.identity
+import kotlinx.serialization.Serializable
+
 /**
  * Unique Identifier
  * */
 typealias Id = String
 
+@Serializable
 data class GameConfig(
     val name: Id,
 
+    val startRoom: Id,
     val rooms: Collection<RoomConfig>,
-    val startingRoom: Id,
 
     val races: Collection<RaceConfig>,
     val classes: Collection<ClassConfig>,
-    val startingEquipment: Collection<Item> //Vllt lieber Rassen/Klassen zuodrnen
+    val startingEquipment: List<Item> //Vllt lieber Rassen/Klassen zuodrnen
 )
 
 /**
  * @param name ist gleichzeitig unique identifier
  * */
+@Serializable
 data class RaceConfig(
     val name: Id,
     // Fähigkeiten usw...
@@ -27,6 +33,7 @@ data class RaceConfig(
 /**
  * @param name ist gleichzeitig unique identifier
  * */
+@Serializable
 data class ClassConfig(
     val name: Id,
     // Fähigkeiten usw...
@@ -39,16 +46,18 @@ data class ClassConfig(
  * @param west verbundener Raum
  * @param message
  * */
+@Serializable
 data class RoomConfig(
     val id: Id,
 
-    val north: Id?,
-    val east: Id?,
-    val south: Id?,
-    val west: Id?,
+    val north: Id? = null,
+    val east: Id? = null,
+    val south: Id? = null,
+    val west: Id? = null,
 
     val message: String,
-    val NPCs: Collection<NPCConfig>,
+    val NPCs: Collection<NPCConfig> = emptyList(),
+    val items: Collection<Item> = emptyList()
 )
 
 /**
@@ -57,6 +66,7 @@ data class RoomConfig(
  * @property greeting Nachricht mit dem Spieler, die den Raum des NPCs betreten, begrüßt werden
  * @property items Items die gehalten werden
  * */
+@Serializable
 data class NPCConfig(
     val id: Id,
 
@@ -66,6 +76,7 @@ data class NPCConfig(
     val items: Collection<Item>?
 )
 
+@Serializable
 data class Item(
     val id: Id,
     val name: String,

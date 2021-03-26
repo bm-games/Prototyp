@@ -6,6 +6,7 @@ import io.ktor.features.*
 import io.ktor.html.*
 import io.ktor.http.*
 import io.ktor.http.cio.websocket.*
+import io.ktor.locations.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
@@ -14,11 +15,14 @@ import io.ktor.server.netty.*
 import io.ktor.websocket.*
 import kotlinx.css.CSSBuilder
 import kotlinx.html.*
+import net.bmgames.game.installGameServer
 import net.bmgames.user.User
+import net.bmgames.user.setupAuth
 import java.time.Duration
 
 fun main(args: Array<String>): Unit =
     EngineMain.main(args)
+
 
 /**
  * Please note that you can use any other name instead of *module*.
@@ -27,6 +31,9 @@ fun main(args: Array<String>): Unit =
 //@Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
+
+    // Ermöglicht Nutzung von Klassen für Endpoints
+    install(Locations)
 
     install(ContentNegotiation) {
         json()
@@ -50,13 +57,7 @@ fun Application.module(testing: Boolean = false) {
         masking = false
     }
 
-
-    /*
-    * Websockets
-    */
-    routing {
-        installChatServer()
-    }
+    installGameServer()
 
     setupAuth()
 
@@ -130,7 +131,6 @@ fun Application.module(testing: Boolean = false) {
         }
     }
 }
-
 
 
 suspend inline fun ApplicationCall.respondCss(builder: CSSBuilder.() -> Unit) {
