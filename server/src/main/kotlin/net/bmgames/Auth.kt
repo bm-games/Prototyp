@@ -34,7 +34,8 @@ fun Auth0Config.asOAuth2Config(): OAuthServerSettings.OAuth2ServerSettings =
         accessTokenUrl = accessTokenUrl,
         clientId = clientId,
         clientSecret = clientSecret,
-        requestMethod = Post
+        requestMethod = Post,
+        defaultScopes = listOf("openid","profile","email","nickname","sub","name","preferred_username","username")
     )
 
 fun Application.setupAuth() {

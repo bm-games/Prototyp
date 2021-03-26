@@ -47,4 +47,11 @@ dependencies {
     implementation("io.arrow-kt:arrow-syntax:$arrow_version")
     kapt("io.arrow-kt:arrow-meta:$arrow_version")
 
+    implementation("io.ktor:ktor-server-sessions:$ktor_version")
+    implementation("io.ktor:ktor-client-core:$ktor_version")
+    implementation("io.ktor:ktor-client-cio:$ktor_version")
+    implementation("io.ktor:ktor-client-json:$ktor_version")
+    implementation("io.ktor:ktor-client-gson:$ktor_version")
+    implementation("io.ktor:ktor-gson:$ktor_version")
+
 }
