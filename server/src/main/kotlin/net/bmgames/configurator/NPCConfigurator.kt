@@ -1,5 +1,7 @@
 package net.bmgames.configurator
 
+import com.google.gson.Gson
+
 class NPCConfigurator{
     companion object {
         fun createNPC(id:String,type:String, name:String, greeting:String, items:Collection<Item>):NPCConfig

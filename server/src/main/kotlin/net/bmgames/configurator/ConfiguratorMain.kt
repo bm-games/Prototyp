@@ -13,7 +13,9 @@ class ConfiguratorMain
 
         fun createGameConfig(id:String, startingRoom:String):GameConfig
         {
-            return GameConfig(id, roomList, startingRoom, raceList, classList, startingEquipment)
+            var gameConfig = GameConfig(id, roomList, startingRoom, raceList, classList, startingEquipment)
+            println(Gson().toJson(gameConfig))
+            return gameConfig
         }
 
         fun generateGameJson(game: GameConfig) :String
