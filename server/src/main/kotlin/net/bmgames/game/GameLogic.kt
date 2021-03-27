@@ -1,11 +1,27 @@
 package net.bmgames.game
 
+import arrow.core.NonEmptyListOf
 import net.bmgames.configurator.GameConfig
 import net.bmgames.game.Move.Companion.Direction
 
 sealed class GameAction
 
 data class Message(val reciepient: Player, val text: String) : GameAction()
+data class MakeAvatar(val reciepient: Player, val text: List<String>) : GameAction()
+
+fun askPlayer(player: Player.NewPlayer, config: GameConfig): MakeAvatar {
+    return MakeAvatar(player, listOf(
+        "Gib deinen Namen ein: ",
+        "Wähle deine Rasse: " + config.races.joinToString (", "){ race -> race.name},
+        "Wähle deine Klasse: "+ config.classes.joinToString (", "){ klasse -> klasse.name}
+    ))
+}
+
+fun createAvatar(player: Player,text: List<String>, config: GameConfig): Avatar {
+    return Avatar(text.get(0),
+        config.races.find { race -> text.get(1)==race.name }!!,
+        config.classes.find { klassen -> text.get(2)== klassen.name }!!)
+}
 
 fun processLogin(playerName: String, game: Game): Pair<List<GameAction>, Game> {
     val (actions, player) =

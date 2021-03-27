@@ -29,6 +29,10 @@ sealed class Player {
 
     @Serializable
     @optics
+    data class NewPlayer(override val user: Email, override val name: String) : Player()
+
+    @Serializable
+    @optics
     data class Normal(
         override val user: Email,
         val avatar: Avatar,
