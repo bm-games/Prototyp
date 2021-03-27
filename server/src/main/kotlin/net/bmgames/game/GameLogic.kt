@@ -1,36 +1,18 @@
 package net.bmgames.game
 
-import arrow.core.NonEmptyListOf
-import net.bmgames.configurator.GameConfig
 import net.bmgames.game.Move.Companion.Direction
 
 sealed class GameAction
+data class Message(val reciepient: IngamePlayer, val text: String) : GameAction()
 
-data class Message(val reciepient: Player, val text: String) : GameAction()
-data class MakeAvatar(val reciepient: Player, val text: List<String>) : GameAction()
-
-fun askPlayer(player: Player.NewPlayer, config: GameConfig): MakeAvatar {
-    return MakeAvatar(player, listOf(
-        "Gib deinen Namen ein: ",
-        "Wähle deine Rasse: " + config.races.joinToString (", "){ race -> race.name},
-        "Wähle deine Klasse: "+ config.classes.joinToString (", "){ klasse -> klasse.name}
-    ))
-}
-
-fun createAvatar(player: Player,text: List<String>, config: GameConfig): Avatar {
-    return Avatar(text.get(0),
-        config.races.find { race -> text.get(1)==race.name }!!,
-        config.classes.find { klassen -> text.get(2)== klassen.name }!!)
-}
-
-fun processLogin(playerName: String, game: Game): Pair<List<GameAction>, Game> {
+fun processLogin(avatar: Avatar, game: Game): Pair<List<GameAction>, Game> {
     val (actions, player) =
-        with(game.getOfflinePlayer(playerName) ?: game.createInitialPlayer(playerName)) {
+        with(game.getOfflinePlayer(avatar.name) ?: game.createInitialPlayer(avatar)) {
             moveToRoom(game.getRoom(game.startRoom)!!)
         }
 
     return Pair(
-        actions.plus(Message(player, "Welcome $playerName")),
+        actions.plus(Message(player, "Welcome $avatar")),
         game.copy(
             offlinePlayers = game.offlinePlayers - player,
             onlinePlayers = game.onlinePlayers + player
@@ -38,7 +20,7 @@ fun processLogin(playerName: String, game: Game): Pair<List<GameAction>, Game> {
     )
 }
 
-fun processLogout(player: Player, game: Game): Pair<List<GameAction>, Game> =
+fun processLogout(player: IngamePlayer, game: Game): Pair<List<GameAction>, Game> =
     Pair(
         emptyList(),
         game.copy(
@@ -48,7 +30,7 @@ fun processLogout(player: Player, game: Game): Pair<List<GameAction>, Game> =
     )
 
 
-fun processCommand(player: Player, command: Command, game: Game): Pair<List<GameAction>, Game> =
+fun processCommand(player: IngamePlayer, command: Command, game: Game): Pair<List<GameAction>, Game> =
     when (command) {
         is Chat -> processChatCommand(player, command, game) to game
         is Look -> processLookCommand(player, command, game) to game
@@ -56,22 +38,22 @@ fun processCommand(player: Player, command: Command, game: Game): Pair<List<Game
         is Pickup -> processPickupCommand(player, command, game)
     }
 
-fun processChatCommand(sender: Player, command: Chat, game: Game): List<GameAction> =
+fun processChatCommand(sender: IngamePlayer, command: Chat, game: Game): List<GameAction> =
     when (command) {
         is Chat.Say ->
             game.onlinePlayers
                 .filter { other ->
-                    sender !is Player.Normal
-                            || (other is Player.Normal && sender.room == other.room)
-                            || other is Player.Master
+                    sender !is IngamePlayer.Normal
+                            || (other is IngamePlayer.Normal && sender.room == other.room)
+                            || other is IngamePlayer.Master
                 }
                 .map {
                     Message(it, "${sender.name} says: ${command.message}")
                 }
         is Chat.Whisper -> {
             val reciepient =
-                if (listOf("master", "m").contains(command.reciepient))
-                    game.onlinePlayers.find { it is Player.Master }
+                if (command.reciepient == "master")
+                    game.onlinePlayers.find { it is IngamePlayer.Master }
                 else
                     game.onlinePlayers.find { it.name == command.reciepient }
             if (reciepient == null) listOf(Message(sender, "Could not find player ${command.reciepient}"))
@@ -81,9 +63,8 @@ fun processChatCommand(sender: Player, command: Chat, game: Game): List<GameActi
             )
         }
     }
-
-fun processMoveCommand(player: Player, command: Move, game: Game): Pair<List<GameAction>, Game> {
-    if (player !is Player.Normal) {
+fun processMoveCommand(player: IngamePlayer, command: Move, game: Game): Pair<List<GameAction>, Game> {
+    if (player !is IngamePlayer.Normal) {
         return listOf(Message(player, "No movement for you.")) to game
     }
     val nextRoom = game.getRoom(player.room)
@@ -102,17 +83,17 @@ fun processMoveCommand(player: Player, command: Move, game: Game): Pair<List<Gam
     }
 }
 
-fun Player.moveToRoom(room: Room): Pair<List<GameAction>, Player> =
-    if (this is Player.Normal)
+fun IngamePlayer.moveToRoom(room: Room): Pair<List<GameAction>, IngamePlayer> =
+    if (this is IngamePlayer.Normal)
         Pair(
             listOf(Message(this, room.config.message)),
-            Player.Normal.room.set(this, room.config.id)
+            IngamePlayer.Normal.room.set(this, room.config.id)
         )
     else Pair(emptyList(), this)
 
 
-fun processLookCommand(player: Player, command: Look, game: Game): List<GameAction> {
-    if (player !is Player.Normal) {
+fun processLookCommand(player: IngamePlayer, command: Look, game: Game): List<GameAction> {
+    if (player !is IngamePlayer.Normal) {
         return listOf(Message(player, "No looking for you."))
     }
     val room = game.getRoom(player.room)
@@ -133,8 +114,8 @@ fun processLookCommand(player: Player, command: Look, game: Game): List<GameActi
 }
 
 
-fun processPickupCommand(player: Player, command: Pickup, game: Game): Pair<List<GameAction>, Game> {
-    if (player !is Player.Normal) {
+fun processPickupCommand(player: IngamePlayer, command: Pickup, game: Game): Pair<List<GameAction>, Game> {
+    if (player !is IngamePlayer.Normal) {
         return listOf(Message(player, "No items for you.")) to game
     }
     val room = game.getRoom(player.room)
@@ -144,7 +125,7 @@ fun processPickupCommand(player: Player, command: Pickup, game: Game): Pair<List
         listOf(Message(player, "Could not find a ${command.obj}")) to game
     } else {
         val newRoom = Room.items.modify(room) { it - item }
-        val newPlayer = Player.Normal.inventory.modify(player) { it + item }
+        val newPlayer = IngamePlayer.Normal.inventory.modify(player) { it + item }
         emptyList<GameAction>() to game.copy(
             rooms = game.rooms.minus(room).plus(newRoom),
             onlinePlayers = game.onlinePlayers.minus(player).plus(newPlayer)

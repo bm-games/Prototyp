@@ -2,15 +2,17 @@ package net.bmgames.user
 
 import kotlinx.serialization.Serializable
 
-typealias Email = String
+typealias UserId = String
+
 
 /**
- * @param email Identifiziert User eindeutig
+ * @param user_id, username Identifiziert User eindeutig
  * */
 @Serializable
 data class User(
-    val email: Email,
+    val user_id: UserId,
+    val username: String,
+    val accessToken: String,
 //    hier weitere Properties wie username o.ä. einfügen
 )
-
 

@@ -18,8 +18,16 @@ data class GameConfig(
 
     val races: Collection<RaceConfig>,
     val classes: Collection<ClassConfig>,
-    val startingEquipment: List<Item> //Vllt lieber Rassen/Klassen zuodrnen
-)
+    val startingEquipment: List<Item>, //Vllt lieber Rassen/Klassen zuodrnen
+) {
+    fun getRace(name: String): RaceConfig? {
+        return races.find { race -> name == race.name }
+    }
+
+    fun getClass(name: String): ClassConfig? {
+        return classes.find { classe -> name == classe.name }
+    }
+}
 
 /**
  * @param name ist gleichzeitig unique identifier
@@ -57,7 +65,7 @@ data class RoomConfig(
 
     val message: String,
     val NPCs: Collection<NPCConfig> = emptyList(),
-    val items: Collection<Item> = emptyList()
+    val items: Collection<Item> = emptyList(),
 )
 
 /**
@@ -73,7 +81,7 @@ data class NPCConfig(
     val type: String,
     val name: String,
     val greeting: String?,
-    val items: Collection<Item>?
+    val items: Collection<Item>?,
 )
 
 @Serializable

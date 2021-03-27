@@ -11,6 +11,7 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.serialization.*
 import io.ktor.server.netty.*
+import io.ktor.sessions.*
 import io.ktor.websocket.*
 import kotlinx.serialization.Serializable
 import net.bmgames.game.gameServer
@@ -31,6 +32,7 @@ fun Application.module(testing: Boolean = false) {
 
     // Ermöglicht Nutzung von Klassen für Endpoints
     install(Locations)
+    install(Sessions)
 
     install(ContentNegotiation) {
         json()

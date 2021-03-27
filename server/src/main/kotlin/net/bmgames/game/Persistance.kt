@@ -53,13 +53,13 @@ fun loadGameState(id: Id): Game? =
         onlinePlayers = emptyList()
     )
 
-fun Game.createInitialPlayer(playerName: String): Player =
-    if (playerName == "player2")
-        Player.Master(playerName, playerName)
+fun Game.createInitialPlayer(avatar: Avatar): IngamePlayer =
+    if (avatar.name == "player2")
+        IngamePlayer.Master(avatar.name, avatar.name)
     else
-        Player.Normal(
-            user = playerName,
-            avatar = Avatar(playerName, config.races.first(), config.classes.first()),
+        IngamePlayer.Normal(
+            user = avatar.name,
+            avatar = avatar,
             room = startRoom,
             inventory = config.startingEquipment
         )

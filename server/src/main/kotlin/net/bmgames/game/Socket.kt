@@ -1,13 +1,16 @@
 package net.bmgames.game
 
-import arrow.core.andThen
-import arrow.core.identity
+import arrow.core.*
 import arrow.fx.coroutines.Atomic
 import io.ktor.http.cio.websocket.*
 import io.ktor.routing.*
+import io.ktor.sessions.*
 import io.ktor.websocket.*
 import net.bmgames.configurator.Id
+import net.bmgames.user.User
+import net.bmgames.user.UserId
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.collections.plus
 
 
 suspend fun Routing.startSocket(path: String, gamesRef: Atomic<Map<Id, Atomic<GameSession>>>) {
@@ -16,6 +19,13 @@ suspend fun Routing.startSocket(path: String, gamesRef: Atomic<Map<Id, Atomic<Ga
     webSocket("$path/{game}") { //WebSocketSession
         val socket = this
         val gameId = call.parameters["game"]
+
+        val user = /*call.sessions.get<User>() ?:*/ User("player${counter.getAndIncrement()}", "player${counter.get()}", "")
+
+        if (user == null) {
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Nicht angemeldet."))
+            return@webSocket
+        }
 
         if (gameId == null) {
             close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Game-Id wurde nicht angegeben."))
@@ -36,22 +46,61 @@ suspend fun Routing.startSocket(path: String, gamesRef: Atomic<Map<Id, Atomic<Ga
             return@webSocket
         }
 
-        val playerName = "player${counter.getAndIncrement()}"
-        gameRef.updateSession(
-            { processLogin(playerName, game) },
-            GameSession.connections.modify { conns -> conns.plus(playerName to socket) }
-        )
+        val userId = user.user_id
+        var playerState: Either<JoiningInteraction, String> =
+            Left(
+                JoiningInteraction(
+                    questions = askPlayer(NewPlayer(userId), gameRef.get().game.config),
+                    currentQuestion = 0,
+                    answers = emptyList()
+                )
+            )
+
+        if (playerState is Either.Left) {
+            socket.send(playerState.a.getQuestion())
+        }
 
         try {
             for (frame in incoming) {
                 if (frame is Frame.Text) {
-                    val cmd = parseCommand(frame.readText())
-                    gameRef.updateSession({
-                        val player = game.getOnlinePlayer(playerName)!!
-                        cmd
-                            .mapLeft { Pair(listOf(Message(player, it)), game) }
-                            .fold(::identity) { command -> processCommand(player, command, game) }
-                    })
+                    when (playerState) {
+                        is Either.Left -> {
+                            val interaction = playerState.a
+                            val answer = interaction.parseAnswer(frame.readText(), gameRef.get().game)
+                            when (answer) {
+                                is Either.Left -> socket.send(answer.a)
+                                is Either.Right -> {
+                                    val nextState = answer.b
+                                    when (nextState) {
+                                        is Either.Left -> { //Nächste Frage
+                                            val nextInteraction = nextState.a
+                                            socket.send(nextInteraction.getQuestion())
+                                            playerState = Left(nextInteraction)
+                                        }
+                                        is Either.Right -> { //Fragen abgeschlossen
+                                            val avatar = createAvatar(nextState.b)
+                                            playerState = Right(avatar.name)
+                                            gameRef.updateSession(
+                                                { processLogin(avatar, game) },
+                                                GameSession.connections.modify { conns -> conns.plus(avatar.name to socket) }
+                                            )
+                                            socket.send("Willkommen, ${avatar.name}")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        is Either.Right -> {
+                            val playerName = playerState.b
+                            val cmd = parseCommand(frame.readText())
+                            gameRef.updateSession({
+                                val player = game.getOnlinePlayer(playerName)!!
+                                cmd
+                                    .mapLeft { Pair(listOf(Message(player, it)), game) }
+                                    .fold(::identity) { command -> processCommand(player, command, game) }
+                            })
+                        }
+                    }
                 } else {
                     continue
                 }
@@ -60,8 +109,8 @@ suspend fun Routing.startSocket(path: String, gamesRef: Atomic<Map<Id, Atomic<Ga
             e.printStackTrace()
         } finally {
             gameRef.updateSession(
-                { processLogout(game.getOnlinePlayer(playerName)!!, game) },
-                GameSession.connections.modify { it - playerName }
+                { processLogout(game.getOnlinePlayer(userId)!!, game) },
+                GameSession.connections.modify { it - userId }
             )
         }
     }

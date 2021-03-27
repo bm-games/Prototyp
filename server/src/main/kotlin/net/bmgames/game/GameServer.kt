@@ -8,6 +8,7 @@ import kotlinx.coroutines.runBlocking
 import net.bmgames.configurator.Id
 import net.bmgames.game.ui.dashboard
 import net.bmgames.game.ui.ingamePage
+import net.bmgames.user.UserId
 
 
 fun Routing.gameServer() = runBlocking {
@@ -25,7 +26,7 @@ fun Routing.gameServer() = runBlocking {
 @optics
 data class GameSession(
     val game: Game,
-    val connections: Map<String, WebSocketSession> = emptyMap(),
+    val connections: Map<UserId, WebSocketSession> = emptyMap(),
 ) {
     companion object
 }

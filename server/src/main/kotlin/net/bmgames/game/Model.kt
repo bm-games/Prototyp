@@ -3,7 +3,7 @@ package net.bmgames.game
 import arrow.optics.optics
 import kotlinx.serialization.Serializable
 import net.bmgames.configurator.*
-import net.bmgames.user.Email
+import net.bmgames.user.UserId
 
 
 /**
@@ -16,38 +16,40 @@ data class Avatar(
     val klasse: ClassConfig,
 )
 
+sealed class Player {
+    abstract val user: UserId
+}
 
 @Serializable
 @optics
-sealed class Player {
-    abstract val user: Email
+data class NewPlayer(override val user: UserId) : Player()
+
+@Serializable
+@optics
+sealed class IngamePlayer : Player() {
     abstract val name: String
 
     @Serializable
     @optics
-    data class Master(override val user: Email, override val name: String) : Player()
-
-    @Serializable
-    @optics
-    data class NewPlayer(override val user: Email, override val name: String) : Player()
+    data class Master(override val user: UserId, override val name: String) : IngamePlayer()
 
     @Serializable
     @optics
     data class Normal(
-        override val user: Email,
+        override val user: UserId,
         val avatar: Avatar,
 
         val room: Id,
         val inventory: List<Item>,
         //Weitere stats wie HP, Buffs, Fähigkeiten, usw...
-    ) : Player() {
+    ) : IngamePlayer() {
         override val name: String
             get() = avatar.name
     }
 
     override fun equals(other: Any?) =
         when (other) {
-            is Player -> name == other.name
+            is IngamePlayer -> name == other.name
             else -> false
         }
 
@@ -64,7 +66,7 @@ sealed class Player {
 @optics
 data class Room(
     val config: RoomConfig,
-    val items: Collection<Item>
+    val items: Collection<Item>,
 )
 
 /**
@@ -78,15 +80,19 @@ data class Game(
 
     val startRoom: Id,
     val rooms: Collection<Room>,
-    val offlinePlayers: Collection<Player>,
-    val onlinePlayers: Collection<Player>,
+    val offlinePlayers: Collection<IngamePlayer>,
+    val onlinePlayers: Collection<IngamePlayer>,
 ) {
-    fun getOfflinePlayer(name: String): Player? =
+    fun getOfflinePlayer(name: String): IngamePlayer? =
         offlinePlayers.find { it.name == name }
 
-    fun getOnlinePlayer(name: String): Player? =
+    fun getOnlinePlayer(name: String): IngamePlayer? =
         onlinePlayers.find { it.name == name }
 
     fun getRoom(id: Id): Room? =
         rooms.find { it.config.id == id }
+
+    fun getPlayer(name: String): IngamePlayer? {
+        return getOfflinePlayer(name) ?: getOnlinePlayer(name)
+    }
 }
