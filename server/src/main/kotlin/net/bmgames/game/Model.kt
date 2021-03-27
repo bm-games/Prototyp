@@ -13,7 +13,7 @@ import net.bmgames.user.Email
 data class Avatar(
     val name: String,
     val race: RaceConfig,
-    val classes: ClassConfig,
+    val klasse: ClassConfig,
 )
 
 
