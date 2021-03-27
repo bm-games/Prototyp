@@ -1,33 +1,16 @@
 package net.bmgames.game
 
 import arrow.core.andThen
-import arrow.core.extensions.*
 import arrow.core.identity
 import arrow.fx.coroutines.Atomic
-import arrow.fx.coroutines.Atomic.Companion.unsafe
-import arrow.optics.optics
-import io.ktor.application.*
 import io.ktor.http.cio.websocket.*
-import io.ktor.http.cio.websocket.CloseReason.Codes.*
 import io.ktor.routing.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.runBlocking
 import net.bmgames.configurator.Id
-import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
 
-@optics
-data class GameSession(
-    val game: Game,
-    val connections: Map<String, WebSocketSession> = emptyMap(),
-) {
-    companion object
-}
-
-
-suspend fun Routing.startSocket(path: String) {
-    val gamesRef = Atomic(emptyMap<Id, Atomic<GameSession>>())
+suspend fun Routing.startSocket(path: String, gamesRef: Atomic<Map<Id, Atomic<GameSession>>>) {
     val counter = AtomicInteger(0)
 
     webSocket("$path/{game}") { //WebSocketSession
@@ -35,13 +18,13 @@ suspend fun Routing.startSocket(path: String) {
         val gameId = call.parameters["game"]
 
         if (gameId == null) {
-            close(CloseReason(PROTOCOL_ERROR, "Game-Id wurde nicht angegeben."))
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Game-Id wurde nicht angegeben."))
             return@webSocket
         }
 
         //Create game if it doesn't exist
         val gameRef = gamesRef.modify { games ->
-            val game = games[gameId] ?: loadGameState(gameId)?.let { state -> unsafe(GameSession(state)) }
+            val game = games[gameId] ?: loadGameState(gameId)?.let { state -> Atomic.unsafe(GameSession(state)) }
             if (game == null)
                 Pair(games, null)
             else
@@ -49,7 +32,7 @@ suspend fun Routing.startSocket(path: String) {
         }
 
         if (gameRef == null) {
-            close(CloseReason(PROTOCOL_ERROR, "Game mit der Id $gameId wurde nicht gefunden."))
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Game mit der Id $gameId wurde nicht gefunden."))
             return@webSocket
         }
 
@@ -96,19 +79,11 @@ suspend fun Atomic<GameSession>.updateSession(
     )
 }()
 
+
 fun Map<String, WebSocketSession>.handleActions(actions: List<GameAction>): suspend () -> Unit = {
     actions.forEach { action ->
         when (action) {
             is Message -> get(action.reciepient.name)?.send(action.text)
-        }
-    }
-}
-
-
-fun Application.installGameServer() {
-    routing {
-        runBlocking {
-            startSocket("/game")
         }
     }
 }

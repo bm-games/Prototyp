@@ -1,5 +1,6 @@
 package net.bmgames.game
 
+import net.bmgames.configurator.GameConfig
 import net.bmgames.game.Move.Companion.Direction
 
 sealed class GameAction
