@@ -38,6 +38,8 @@ dependencies {
     implementation ("ch.qos.logback:logback-classic:$logback_version")
     testImplementation ("io.ktor:ktor-server-tests:$ktor_version")
 
+    implementation("com.google.code.gson:gson:2.8.6")
+
     implementation("io.ktor:ktor-serialization:$ktor_version")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.1.0")
 
@@ -46,5 +48,7 @@ dependencies {
     implementation("io.arrow-kt:arrow-optics:$arrow_version")
     implementation("io.arrow-kt:arrow-syntax:$arrow_version")
     kapt("io.arrow-kt:arrow-meta:$arrow_version")
+
+
 
 }
