@@ -13,7 +13,7 @@ import net.bmgames.user.Email
 data class Avatar(
     val name: String,
     val race: RaceConfig,
-    val klasse: ClassConfig,
+    val classes: ClassConfig,
 )
 
 
@@ -26,6 +26,10 @@ sealed class Player {
     @Serializable
     @optics
     data class Master(override val user: Email, override val name: String) : Player()
+
+    @Serializable
+    @optics
+    data class NewPlayer(override val user: Email, override val name: String) : Player()
 
     @Serializable
     @optics
