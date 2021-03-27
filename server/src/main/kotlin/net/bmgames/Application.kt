@@ -12,8 +12,11 @@ import io.ktor.routing.*
 import io.ktor.serialization.*
 import io.ktor.server.netty.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.coroutineScope
 import kotlinx.css.CSSBuilder
 import kotlinx.html.*
+import kotlinx.html.dom.document
+import net.bmgames.configurator.ui.Configurator
 import net.bmgames.user.User
 import java.time.Duration
 
@@ -80,6 +83,10 @@ fun Application.module(testing: Boolean = false) {
                     }
                 }
             }
+        }
+
+        get("/config"){
+            call.respondHtmlTemplate(Configurator()){ }
         }
 
         /*
