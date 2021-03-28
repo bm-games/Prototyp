@@ -8,9 +8,11 @@ import io.ktor.auth.*
 import io.ktor.html.*
 import io.ktor.locations.*
 import io.ktor.routing.*
+import io.ktor.sessions.*
 import kotlinx.html.*
 import net.bmgames.configurator.Id
 import net.bmgames.game.GameSession
+import net.bmgames.user.User
 
 @Location("/game/{game}")
 class InGame(val game: Id)
@@ -58,7 +60,7 @@ fun Routing.ingamePage(gamesRef: Atomic<Map<Id, Atomic<GameSession>>>) {
             }
             body {
                 h1 {
-                    +"Hi ${call.authentication.principal<OAuthAccessTokenResponse>()}"
+                    +"Hi ${call.sessions.get<User>()}"
                 }
                 p {
                     +"Welcome in Game ${params.game}"

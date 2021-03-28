@@ -45,7 +45,7 @@ fun Auth0Config.asOAuth2Config(): OAuthServerSettings.OAuth2ServerSettings =
         defaultScopes = listOf("openid","profile","email","nickname","sub","name","preferred_username","username")
     )
 
-fun Application.setupAuth() {
+fun Application.setupAuth(): Auth0Config {
     val config = auth0ConfigReader(ConfigFactory.load() ?: throw Exception("Could not load config"))
     install(Authentication) {
         oauth("auth0") {
@@ -54,4 +54,5 @@ fun Application.setupAuth() {
             client = HttpClient(Apache)
         }
     }
+    return config
 }

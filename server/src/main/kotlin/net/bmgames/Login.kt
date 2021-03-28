@@ -12,12 +12,13 @@ import io.ktor.http.*
 import io.ktor.routing.*
 import io.ktor.sessions.*
 import kotlinx.html.*
+import net.bmgames.user.Auth0Config
 import net.bmgames.user.FullUserInfo
 import net.bmgames.user.User
 import net.bmgames.user.Userinfo
 
 
-fun Route.loginPage(environment: ApplicationEnvironment) {
+fun Route.loginPage(config: Auth0Config) {
     route("login") {
         param("error") {
             handle {
@@ -28,7 +29,7 @@ fun Route.loginPage(environment: ApplicationEnvironment) {
         handle {
             val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
             if (principal != null) {
-                call.loggedInSuccessResponse(principal, environment)
+                call.loggedInSuccessResponse(principal, config)
             } else {
                 call.respondHtml {
                     head {
@@ -78,9 +79,9 @@ val client = HttpClient(CIO) {
 
 private suspend fun ApplicationCall.loggedInSuccessResponse(
     callback: OAuthAccessTokenResponse.OAuth2,
-    environment: ApplicationEnvironment,
+    config: Auth0Config,
 ) {
-    val apikey = environment.config.propertyOrNull("auth0.apikey")?.getString()
+    val apikey = config.apikey
     val accessToken: String = callback.accessToken
 
     val userInfoWithOutUsername: Userinfo = client.get<Userinfo>("https://bm-games.eu.auth0.com/userinfo") {

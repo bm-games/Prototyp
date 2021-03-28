@@ -20,7 +20,7 @@ suspend fun Routing.startSocket(path: String, gamesRef: Atomic<Map<Id, Atomic<Ga
         val socket = this
         val gameId = call.parameters["game"]
 
-        val user = /*call.sessions.get<User>() ?:*/ User("player${counter.getAndIncrement()}", "player${counter.get()}", "")
+        val user = call.sessions.get<User>()/* ?: User("player${counter.getAndIncrement()}", "player${counter.get()}", "")*/
 
         if (user == null) {
             close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Nicht angemeldet."))

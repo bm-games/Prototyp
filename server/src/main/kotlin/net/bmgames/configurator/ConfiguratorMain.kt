@@ -14,7 +14,7 @@ class ConfiguratorMain
 
         fun createGameConfig(id:String, startingRoom:String)
         {
-            val gameConfig = GameConfig(id, roomList, startingRoom, raceList, classList, startingEquipment)
+            val gameConfig = GameConfig(id, startingRoom, roomList, raceList, classList, startingEquipment)
             val gameConfigJson = Gson().toJson(gameConfig)
             allMUDs.put(gameConfig.name, gameConfigJson)
         }
