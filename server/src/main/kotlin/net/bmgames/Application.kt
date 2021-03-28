@@ -35,7 +35,9 @@ fun Application.module(testing: Boolean = false) {
 
     // Ermöglicht Nutzung von Klassen für Endpoints
     install(Locations)
-    install(Sessions)
+    install(Sessions) {
+        cookie<User>("UserIdentifier", storage = SessionStorageMemory())
+    }
 
     install(ContentNegotiation) {
         json()
@@ -48,9 +50,6 @@ fun Application.module(testing: Boolean = false) {
         masking = false
     }
 
-    install(Sessions) {
-        cookie<User>("UserIdentifier", storage = SessionStorageMemory())
-    }
 
     setupAuth()
 
