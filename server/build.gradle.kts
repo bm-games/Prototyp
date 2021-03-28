@@ -43,12 +43,19 @@ dependencies {
     implementation("io.ktor:ktor-html-builder:$ktor_version")
     implementation("org.jetbrains:kotlin-css-jvm:1.0.0-pre.129-kotlin-1.4.20")
     implementation("io.ktor:ktor-server-netty:$ktor_version")
+
+    implementation("io.ktor:ktor-server-sessions:$ktor_version")
+    implementation("io.ktor:ktor-client-cio:$ktor_version")
+
     implementation("ch.qos.logback:logback-classic:$logback_version")
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
 
     //Serialization (JSON)
     implementation("io.ktor:ktor-serialization:$ktor_version")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.1.0")
+    implementation("io.ktor:ktor-client-json:$ktor_version")
+    implementation("io.ktor:ktor-client-gson:$ktor_version")
+    implementation("io.ktor:ktor-gson:$ktor_version")
 
     //Auth0
     implementation("com.auth0:mvc-auth-commons:1.+")
@@ -61,6 +68,5 @@ dependencies {
 
     //Command parser
     implementation("com.xenomachina:kotlin-argparser:2.0.7")
+
 }
-
-

@@ -3,13 +3,21 @@ package net.bmgames
 
 import io.ktor.application.*
 import io.ktor.auth.*
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.features.json.*
+import io.ktor.client.request.*
 import io.ktor.html.*
-import io.ktor.response.*
+import io.ktor.http.*
 import io.ktor.routing.*
+import io.ktor.sessions.*
 import kotlinx.html.*
+import net.bmgames.user.FullUserInfo
+import net.bmgames.user.User
+import net.bmgames.user.Userinfo
 
 
-fun Route.loginPage() {
+fun Route.loginPage(environment: ApplicationEnvironment) {
     route("login") {
         param("error") {
             handle {
@@ -18,9 +26,9 @@ fun Route.loginPage() {
         }
 
         handle {
-            val principal = call.authentication.principal<OAuthAccessTokenResponse>()
+            val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
             if (principal != null) {
-                call.loggedInSuccessResponse(principal)
+                call.loggedInSuccessResponse(principal, environment)
             } else {
                 call.respondHtml {
                     head {
@@ -62,7 +70,35 @@ private suspend fun ApplicationCall.loginFailedPage(errors: List<String>) {
     }
 }
 
-private suspend fun ApplicationCall.loggedInSuccessResponse(callback: OAuthAccessTokenResponse) {
+val client = HttpClient(CIO) {
+    install(JsonFeature) {
+        serializer = GsonSerializer {}
+    }
+}
+
+private suspend fun ApplicationCall.loggedInSuccessResponse(
+    callback: OAuthAccessTokenResponse.OAuth2,
+    environment: ApplicationEnvironment,
+) {
+    val apikey = environment.config.propertyOrNull("auth0.apikey")?.getString()
+    val accessToken: String = callback.accessToken
+
+    val userInfoWithOutUsername: Userinfo = client.get<Userinfo>("https://bm-games.eu.auth0.com/userinfo") {
+        headers {
+            append(HttpHeaders.Authorization, "Bearer $accessToken")
+        }
+    }
+
+    val fullUserInfo: FullUserInfo =
+        client.get<FullUserInfo>("https://bm-games.eu.auth0.com/api/v2/users/${userInfoWithOutUsername.sub}") {
+            headers {
+                append(HttpHeaders.Authorization, "Bearer $apikey")
+            }
+        }
+    sessions.set(User(user_id = userInfoWithOutUsername.sub,
+        username = fullUserInfo.username,
+        accessToken = callback.accessToken))
+
     respondHtml {
         head {
             title { +"Logged in" }
@@ -72,7 +108,7 @@ private suspend fun ApplicationCall.loggedInSuccessResponse(callback: OAuthAcces
                 +"You are logged in"
             }
             p {
-                +"Your token is $callback"
+                +"Your Username is ${fullUserInfo.username}, your User_ID is ${userInfoWithOutUsername.sub} and your AccessToken is ${callback.accessToken}"
             }
             a("/dashboard") {
                 +"See available games"
@@ -80,4 +116,9 @@ private suspend fun ApplicationCall.loggedInSuccessResponse(callback: OAuthAcces
 
         }
     }
+}
+
+
+fun ApplicationCall.getUsername(): String? {
+    return sessions.get<User>()?.username
 }
