@@ -1,4 +1,4 @@
-package net.bmgames
+package net.bmgames.user
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -7,11 +7,17 @@ import io.ktor.auth.*
 import io.ktor.client.*
 import io.ktor.client.engine.apache.*
 import io.ktor.http.HttpMethod.Companion.Post
+import io.ktor.sessions.*
+import kotlinx.html.A
+import net.bmgames.user.User
+
+
 
 data class Auth0Config(
     val url: String,
     val clientId: String,
     val clientSecret: String,
+    val apikey: String,
 //    val audience: String
 ) {
     val accessTokenUrl = "$url/oauth/token"
@@ -24,6 +30,7 @@ fun auth0ConfigReader(config: Config): Auth0Config =
         url = config.getString("auth0.url"),
         clientId = config.getString("auth0.clientId"),
         clientSecret = config.getString("auth0.clientSecret"),
+        apikey = config.getString("auth0.apikey")
 //        audience = config.tryGetString("auth0.audience") ?: "api://default"
     )
 
@@ -34,7 +41,8 @@ fun Auth0Config.asOAuth2Config(): OAuthServerSettings.OAuth2ServerSettings =
         accessTokenUrl = accessTokenUrl,
         clientId = clientId,
         clientSecret = clientSecret,
-        requestMethod = Post
+        requestMethod = Post,
+        defaultScopes = listOf("openid","profile","email","nickname","sub","name","preferred_username","username")
     )
 
 fun Application.setupAuth() {
