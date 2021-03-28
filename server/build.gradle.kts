@@ -44,6 +44,8 @@ dependencies {
     implementation("org.jetbrains:kotlin-css-jvm:1.0.0-pre.129-kotlin-1.4.20")
     implementation("io.ktor:ktor-server-netty:$ktor_version")
 
+    implementation("com.google.code.gson:gson:2.8.6")
+
     implementation("io.ktor:ktor-server-sessions:$ktor_version")
     implementation("io.ktor:ktor-client-cio:$ktor_version")
 
@@ -68,5 +70,6 @@ dependencies {
 
     //Command parser
     implementation("com.xenomachina:kotlin-argparser:2.0.7")
+
 
 }
