@@ -8,6 +8,8 @@ import io.ktor.client.*
 import io.ktor.client.engine.apache.*
 import io.ktor.http.HttpMethod.Companion.Post
 import io.ktor.locations.*
+import net.bmgames.Login
+import java.net.URI
 
 
 data class Auth0Config(
@@ -31,8 +33,9 @@ fun auth0ConfigReader(config: Config): Auth0Config =
 //        audience = config.tryGetString("auth0.audience") ?: "api://default"
     )
 
-fun Auth0Config.asOAuth2Config(): OAuthServerSettings.OAuth2ServerSettings =
-    OAuthServerSettings.OAuth2ServerSettings(
+fun Auth0Config.asOAuth2Config(): OAuthServerSettings.OAuth2ServerSettings {
+    println(URI(authorizeUrl))
+    return OAuthServerSettings.OAuth2ServerSettings(
         name = "auth0",
         authorizeUrl = authorizeUrl,
         accessTokenUrl = accessTokenUrl,
@@ -41,13 +44,14 @@ fun Auth0Config.asOAuth2Config(): OAuthServerSettings.OAuth2ServerSettings =
         requestMethod = Post,
         defaultScopes = listOf("openid","profile","email","nickname","sub","name","preferred_username","username")
     )
+}
 
 @KtorExperimentalLocationsAPI
 fun Application.setupAuth(): Auth0Config {
     val config = auth0ConfigReader(ConfigFactory.load() ?: throw Exception("Could not load config"))
     install(Authentication) {
         oauth("auth0") {
-            urlProvider = { url("/login") }
+            urlProvider = { url(Login()) }
             providerLookup = { config.asOAuth2Config() }
             client = HttpClient(Apache)
         }

@@ -1,3 +1,4 @@
+@file:OptIn(KtorExperimentalLocationsAPI::class)
 package net.bmgames
 
 
@@ -9,6 +10,7 @@ import io.ktor.client.features.json.*
 import io.ktor.client.request.*
 import io.ktor.html.*
 import io.ktor.http.*
+import io.ktor.locations.*
 import io.ktor.routing.*
 import io.ktor.sessions.*
 import kotlinx.html.*
@@ -17,9 +19,10 @@ import net.bmgames.user.FullUserInfo
 import net.bmgames.user.User
 import net.bmgames.user.Userinfo
 
+@Location("/login") class Login
 
 fun Route.loginPage(config: Auth0Config) {
-    route("login") {
+    location<Login> {
         param("error") {
             handle {
                 call.loginFailedPage(call.parameters.getAll("error").orEmpty())
