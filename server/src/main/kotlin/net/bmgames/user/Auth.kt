@@ -7,10 +7,7 @@ import io.ktor.auth.*
 import io.ktor.client.*
 import io.ktor.client.engine.apache.*
 import io.ktor.http.HttpMethod.Companion.Post
-import io.ktor.sessions.*
-import kotlinx.html.A
-import net.bmgames.user.User
-
+import io.ktor.locations.*
 
 
 data class Auth0Config(
@@ -45,11 +42,12 @@ fun Auth0Config.asOAuth2Config(): OAuthServerSettings.OAuth2ServerSettings =
         defaultScopes = listOf("openid","profile","email","nickname","sub","name","preferred_username","username")
     )
 
+@KtorExperimentalLocationsAPI
 fun Application.setupAuth(): Auth0Config {
     val config = auth0ConfigReader(ConfigFactory.load() ?: throw Exception("Could not load config"))
     install(Authentication) {
         oauth("auth0") {
-            urlProvider = { "http://localhost:8080/login" }
+            urlProvider = { url("/login") }
             providerLookup = { config.asOAuth2Config() }
             client = HttpClient(Apache)
         }

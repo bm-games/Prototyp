@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.gradle.jvm.tasks.Jar
 
 val compileKotlin: KotlinCompile by tasks
 val ktor_version: String by project
@@ -31,6 +32,8 @@ repositories {
     maven { url = uri("https://dl.bintray.com/arrow-kt/arrow-kt/") }
     maven { url = uri("https://kotlin.bintray.com/kotlinx") }
 }
+
+
 
 dependencies {
     implementation("io.ktor:ktor-server-core:$ktor_version")
@@ -72,4 +75,21 @@ dependencies {
     implementation("com.xenomachina:kotlin-argparser:2.0.7")
 
 
+}
+
+val fatJar = task("fatJar", type = Jar::class) {
+    baseName = "${project.name}-fat"
+    manifest {
+        attributes["Implementation-Title"] = "BM Games Prototyp"
+        attributes["Implementation-Version"] = version
+        attributes["Main-Class"] = "net.bmgames.ApplicationKt"
+    }
+    from(configurations.runtimeClasspath.get().map({ if (it.isDirectory) it else zipTree(it) }))
+    with(tasks.jar.get() as CopySpec)
+}
+
+tasks {
+    "build" {
+        dependsOn(fatJar)
+    }
 }
