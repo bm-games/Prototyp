@@ -1,4 +1,5 @@
 @file:OptIn(KtorExperimentalLocationsAPI::class)
+
 package net.bmgames
 
 
@@ -11,15 +12,19 @@ import io.ktor.client.request.*
 import io.ktor.html.*
 import io.ktor.http.*
 import io.ktor.locations.*
+import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.sessions.*
+import io.ktor.util.pipeline.*
 import kotlinx.html.*
+import net.bmgames.game.ui.Dashboard
 import net.bmgames.user.Auth0Config
 import net.bmgames.user.FullUserInfo
 import net.bmgames.user.User
 import net.bmgames.user.Userinfo
 
-@Location("/login") class Login
+@Location("/login")
+class Login
 
 fun Route.loginPage(config: Auth0Config) {
     location<Login> {
@@ -34,21 +39,7 @@ fun Route.loginPage(config: Auth0Config) {
             if (principal != null) {
                 call.loggedInSuccessResponse(principal, config)
             } else {
-                call.respondHtml {
-                    head {
-                        title { +"index page" }
-                    }
-                    body {
-                        h1 {
-                            +"Try to login"
-                        }
-                        p {
-                            a(href = "login") {
-                                +"Login"
-                            }
-                        }
-                    }
-                }
+                call.respondHtml(block = loginPage)
             }
         }
     }
@@ -58,7 +49,7 @@ fun Route.loginPage(config: Auth0Config) {
 private suspend fun ApplicationCall.loginFailedPage(errors: List<String>) {
     respondHtml {
         head {
-            title { +"Login with" }
+            title { +"Login error" }
         }
         body {
             h1 {
@@ -99,10 +90,15 @@ private suspend fun ApplicationCall.loggedInSuccessResponse(
                 append(HttpHeaders.Authorization, "Bearer $apikey")
             }
         }
-    sessions.set(User(user_id = userInfoWithOutUsername.sub,
-        username = fullUserInfo.username,
-        accessToken = callback.accessToken))
-
+    sessions.set(
+        User(
+            user_id = userInfoWithOutUsername.sub,
+            username = fullUserInfo.username,
+            accessToken = callback.accessToken
+        )
+    )
+    respondRedirect(url(Dashboard()))
+/*
     respondHtml {
         head {
             title { +"Logged in" }
@@ -119,10 +115,19 @@ private suspend fun ApplicationCall.loggedInSuccessResponse(
             }
 
         }
-    }
+    }*/
 }
 
 
-fun ApplicationCall.getUsername(): String? {
-    return sessions.get<User>()?.username
+val PipelineContext<Unit, ApplicationCall>.user: User?
+    get() = call.sessions.get<User>()
+
+
+suspend fun PipelineContext<Unit, ApplicationCall>.authenticated(f: suspend User.() -> Unit) {
+    val user = call.sessions.get<User>()
+    if (user == null) {
+        call.respond(HttpStatusCode.Unauthorized)
+    } else {
+        f(user)
+    }
 }

@@ -1,3 +1,5 @@
+@file:OptIn(KtorExperimentalLocationsAPI::class)
+
 package net.bmgames.user
 
 import com.typesafe.config.Config
@@ -34,7 +36,6 @@ fun auth0ConfigReader(config: Config): Auth0Config =
     )
 
 fun Auth0Config.asOAuth2Config(): OAuthServerSettings.OAuth2ServerSettings {
-    println(URI(authorizeUrl))
     return OAuthServerSettings.OAuth2ServerSettings(
         name = "auth0",
         authorizeUrl = authorizeUrl,
@@ -42,11 +43,19 @@ fun Auth0Config.asOAuth2Config(): OAuthServerSettings.OAuth2ServerSettings {
         clientId = clientId,
         clientSecret = clientSecret,
         requestMethod = Post,
-        defaultScopes = listOf("openid","profile","email","nickname","sub","name","preferred_username","username")
+        defaultScopes = listOf(
+            "openid",
+            "profile",
+            "email",
+            "nickname",
+            "sub",
+            "name",
+            "preferred_username",
+            "username"
+        )
     )
 }
 
-@KtorExperimentalLocationsAPI
 fun Application.setupAuth(): Auth0Config {
     val config = auth0ConfigReader(ConfigFactory.load() ?: throw Exception("Could not load config"))
     install(Authentication) {

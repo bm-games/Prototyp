@@ -16,13 +16,13 @@ sealed class Command
 
 sealed class Chat(parser: ArgParser) : Command() {
     class Say(parser: ArgParser) : Chat(parser) {
-        private val msg by parser.positionalList("message")
+        private val msg by parser.positionalList("Nachricht")
         val message by lazy { msg.joinToString(" ") }
     }
 
     class Whisper(parser: ArgParser) : Chat(parser) {
-        val reciepient by parser.positional("reciepient. \"master\" or \"m\" for dungeon master")
-        private val msg by parser.positionalList("message")
+        val reciepient by parser.positional("Empfänger. \"master\" or \"m\" für den Dungeon Master")
+        private val msg by parser.positionalList("Nachricht")
         val message by lazy { msg.joinToString(" ") }
     }
 }
@@ -35,7 +35,7 @@ class Move(parser: ArgParser) : Command() {
                 "-${it.name.toLowerCase().subSequence(0,1)}" to it
             )
         }.toMap(),
-        help = "the direction you want go"
+        help = "die gewünschte Richtung"
     )
 
     companion object {
@@ -49,11 +49,11 @@ class Move(parser: ArgParser) : Command() {
 }
 
 class Look(parser: ArgParser) : Command() {
-//    val target by parser.positional("your target. Default is the current room.").default("room")
+    val target by parser.positional("dein Ziel. Standard ist \"room\" für den aktuellen Raum").default("room")
 }
 
 class Pickup(parser: ArgParser) : Command() {
-    val obj by parser.positional(help = "the object you want to pick up")
+    val obj by parser.positional(help = "das Objekt das du aufheben willst")
 }
 
 
@@ -73,7 +73,7 @@ suspend fun parseCommand(input: String): Either<String, Command> {
     val commandConstructor = args.getOrNull(0)?.let { name -> commands[name] }
 
     return if (commandConstructor == null)
-        Left("Available commands: ${commands.keys.joinToString(", ")}")
+        Left("Verfügbare Befehle: ${commands.keys.joinToString(", ")}")
     else
         catch {
             ArgParser(args.subList(1, args.size).toTypedArray()).parseInto(commandConstructor)

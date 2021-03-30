@@ -3,7 +3,7 @@ package net.bmgames.game
 import arrow.optics.optics
 import kotlinx.serialization.Serializable
 import net.bmgames.configurator.*
-import net.bmgames.user.UserId
+import net.bmgames.user.Username
 
 
 /**
@@ -17,12 +17,12 @@ data class Avatar(
 )
 
 sealed class Player {
-    abstract val user: UserId
+    abstract val user: Username
 }
 
 @Serializable
 @optics
-data class NewPlayer(override val user: UserId) : Player()
+data class NewPlayer(override val user: Username) : Player()
 
 @Serializable
 @optics
@@ -31,12 +31,12 @@ sealed class IngamePlayer : Player() {
 
     @Serializable
     @optics
-    data class Master(override val user: UserId, override val name: String) : IngamePlayer()
+    data class Master(override val user: Username, override val name: String) : IngamePlayer()
 
     @Serializable
     @optics
     data class Normal(
-        override val user: UserId,
+        override val user: Username,
         val avatar: Avatar,
 
         val room: Id,

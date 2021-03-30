@@ -1,5 +1,6 @@
 package net.bmgames.game
 
+import arrow.core.extensions.list.foldable.find
 import net.bmgames.game.Move.Companion.Direction
 
 sealed class GameAction
@@ -12,7 +13,7 @@ fun processLogin(avatar: Avatar, game: Game): Pair<List<GameAction>, Game> {
         }
 
     return Pair(
-        actions.plus(Message(player, "Welcome $avatar")),
+        listOf(Message(player, "Willkommen ${avatar.name}")).plus(actions),
         game.copy(
             offlinePlayers = game.offlinePlayers - player,
             onlinePlayers = game.onlinePlayers + player
@@ -48,7 +49,7 @@ fun processChatCommand(sender: IngamePlayer, command: Chat, game: Game): List<Ga
                             || other is IngamePlayer.Master
                 }
                 .map {
-                    Message(it, "${sender.name} says: ${command.message}")
+                    Message(it, "${sender.name} sagt: ${command.message}")
                 }
         is Chat.Whisper -> {
             val reciepient =
@@ -56,13 +57,14 @@ fun processChatCommand(sender: IngamePlayer, command: Chat, game: Game): List<Ga
                     game.onlinePlayers.find { it is IngamePlayer.Master }
                 else
                     game.onlinePlayers.find { it.name == command.reciepient }
-            if (reciepient == null) listOf(Message(sender, "Could not find player ${command.reciepient}"))
+            if (reciepient == null) listOf(Message(sender, "${command.reciepient} is nicht da."))
             else listOf(
-                Message(sender, "You whispered to ${command.reciepient}: ${command.message}"),
-                Message(reciepient, "${sender.name} whispers to you: ${command.message}"),
+                Message(sender, "Du hast ${command.reciepient} geflüstert: ${command.message}"),
+                Message(reciepient, "${sender.name} flüstert dir: ${command.message}"),
             )
         }
     }
+
 fun processMoveCommand(player: IngamePlayer, command: Move, game: Game): Pair<List<GameAction>, Game> {
     if (player !is IngamePlayer.Normal) {
         return listOf(Message(player, "No movement for you.")) to game
@@ -73,7 +75,7 @@ fun processMoveCommand(player: IngamePlayer, command: Move, game: Game): Pair<Li
         ?.let(game::getRoom)
 
     return if (nextRoom == null) {
-        listOf(Message(player, "There is no room in this direction. Try \"look\"")) to game
+        listOf(Message(player, "Hier ist nur eine Wand. Probier mal \"look\"")) to game
     } else {
         player
             .moveToRoom(nextRoom)
@@ -86,7 +88,15 @@ fun processMoveCommand(player: IngamePlayer, command: Move, game: Game): Pair<Li
 fun IngamePlayer.moveToRoom(room: Room): Pair<List<GameAction>, IngamePlayer> =
     if (this is IngamePlayer.Normal)
         Pair(
-            listOf(Message(this, room.config.message)),
+            listOf(
+                Message(
+                    this,
+                    if (room.config.message.startsWith("Welcome in")
+                        || room.config.message.startsWith("Willkommen in")
+                    ) room.config.message
+                    else "Willkommen in Raum " + room.config.message
+                )
+            ),
             IngamePlayer.Normal.room.set(this, room.config.id)
         )
     else Pair(emptyList(), this)
@@ -97,20 +107,70 @@ fun processLookCommand(player: IngamePlayer, command: Look, game: Game): List<Ga
         return listOf(Message(player, "No looking for you."))
     }
     val room = game.getRoom(player.room)
-    return if (room == null)
-        listOf(Message(player, "Empty room"))
-    else Direction.values()
-        .mapNotNull { direction ->
-            direction.nextRoom(room.config)
-                ?.let(game::getRoom)
-                ?.let { Message(player, "There's a room ${direction.name.toLowerCase()} of you.") }
-        }.plus(
-            if (room.items.isNotEmpty()) listOf(Message(player,
-                "Items in this room: ${room.items.joinToString(", ") { it.name }}"))
-            else emptyList()
-        ).plus(
-            Message(player, "Inventory: ${player.inventory.joinToString(", ") { it.name }}")
-        )
+    return if (room == null) {
+        listOf(Message(player, "Hier ist nichts."))
+    } else {
+        val playersInRoom =
+            game.onlinePlayers.filter {
+                it.name != player.name
+                        && it is IngamePlayer.Normal
+                        && it.room == room.config.id
+            }.map { it as IngamePlayer.Normal }
+
+        if (command.target != "room") {
+            val targetPlayer = playersInRoom.find { it.name == command.target }.orNull()
+            if (targetPlayer != null) {
+                return listOf(
+                    Message(
+                        player,
+                        "${targetPlayer.name} ist ${targetPlayer.avatar.race.name} und ${targetPlayer.avatar.klasse.name}"
+                    )
+                )
+            }
+            val targetNPCs = room.config.NPCs.find { it.name == command.target }
+            if (targetNPCs != null) {
+                return listOf(
+                    Message(
+                        player,
+                        "${targetNPCs.name}, ein ${targetNPCs.type} sagt: ${targetNPCs.greeting ?: "Hi"}"
+                    )
+                )
+            }
+            return listOf(Message(player, "${command.target} wurde nicht gefunden."))
+        } else {
+            return Direction.values()
+                .mapNotNull { direction ->
+                    direction.nextRoom(room.config)
+                        ?.let(game::getRoom)
+                        ?.let { Message(player, "In Richtung ${direction.name.toLowerCase()} ist eine Tür.") }
+                }.plus(
+                    if (room.items.isNotEmpty()) listOf(
+                        Message(
+                            player,
+                            "Items in diesem Raum: ${room.items.joinToString(", ") { it.name }}"
+                        )
+                    )
+                    else emptyList()
+                ).plus(
+                    if (player.inventory.isNotEmpty())
+                        listOf(Message(player, "Inventar: ${player.inventory.joinToString(", ") { it.name }}"))
+                    else emptyList()
+                ).plus(
+                    if (playersInRoom.isNotEmpty())
+                        listOf(Message(player, "Spieler in diesem Raum: ${playersInRoom.joinToString(", ") { it.name }}"))
+                    else emptyList()
+                ).plus(
+                    if (room.config.NPCs.isNotEmpty())
+                        listOf(
+                            Message(
+                                player,
+                                "Du siehst einige NPCs: ${room.config.NPCs.joinToString(" and ") { it.name + " (" + it.type + ")" }}"
+                            )
+                        )
+                    else emptyList()
+                )
+        }
+    }
 }
 
 
@@ -122,7 +182,7 @@ fun processPickupCommand(player: IngamePlayer, command: Pickup, game: Game): Pai
     val item = room?.items?.find { it.name == command.obj }
 
     return if (item == null) {
-        listOf(Message(player, "Could not find a ${command.obj}")) to game
+        listOf(Message(player, "Konnte ${command.obj} nicht finden.")) to game
     } else {
         val newRoom = Room.items.modify(room) { it - item }
         val newPlayer = IngamePlayer.Normal.inventory.modify(player) { it + item }

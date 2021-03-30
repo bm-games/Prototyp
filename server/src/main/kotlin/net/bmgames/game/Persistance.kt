@@ -1,8 +1,10 @@
 package net.bmgames.game
 
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import net.bmgames.configurator.*
 
-private val dummyConfig = GameConfig(
+val dummyConfig = GameConfig(
     name = "Demo",
     startRoom = "start",
     rooms = listOf(
@@ -39,24 +41,27 @@ private val dummyConfig = GameConfig(
     startingEquipment = emptyList()
 )
 
+val coolMUD =
+    Json.decodeFromString<GameConfig>("""{ "name": "Cooler MUD", "rooms": [ { "id": "5", "north": "6", "east": "", "south": "", "west": "", "message": "Willkommen in St. GeORKen", "NPCs": [ { "id": "4", "type": "Ork", "name": "Geork", "greeting": "Guten mORKen", "items": [ { "id": "3", "name": "Bohne" } ] } ] }, { "id": "6", "north": "", "east": "", "south": "5", "west": "", "message": "SouthsideCity", "NPCs": [] } ], "startRoom": "5", "races": [ { "name": "Gurke" }, { "name": "Paprika" } ], "classes": [ { "name": "Magier" }, { "name": "Kampfgurke" } ], "startingEquipment": [ { "id": "1", "name": "Schwert" }, { "id": "2", "name": "Schild" } ] }""")
 
 /**
  * Hier würde der Gamestate aus einer Datei oder DB geladen werden
  * */
 fun loadGameState(id: Id): Game? =
-    Game(
-        id = id,
-        config = dummyConfig,
-        startRoom = dummyConfig.startRoom,
-        rooms = dummyConfig.rooms.map { Room(it, it.items) },
-        offlinePlayers = emptyList(),
-        onlinePlayers = emptyList()
-    )
+    getConfig(id)?.let {
+        Game(
+            id = it.name,
+            config = it,
+            startRoom = it.startRoom,
+            rooms = it.rooms.map { room -> Room(room, room.items) },
+            offlinePlayers = emptyList(),
+            onlinePlayers = emptyList()
+        )
+    }
+
+private fun getConfig(id: Id): GameConfig? = ConfiguratorMain.allMUDs[id]?.let { Json.decodeFromString<GameConfig>(it) }
 
 fun Game.createInitialPlayer(avatar: Avatar): IngamePlayer =
-    if (avatar.name == "player2")
-        IngamePlayer.Master(avatar.name, avatar.name)
-    else
         IngamePlayer.Normal(
             user = avatar.name,
             avatar = avatar,

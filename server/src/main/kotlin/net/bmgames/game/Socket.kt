@@ -8,19 +8,16 @@ import io.ktor.sessions.*
 import io.ktor.websocket.*
 import net.bmgames.configurator.Id
 import net.bmgames.user.User
-import net.bmgames.user.UserId
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.plus
 
 
 suspend fun Routing.startSocket(path: String, gamesRef: Atomic<Map<Id, Atomic<GameSession>>>) {
-    val counter = AtomicInteger(0)
 
-    webSocket("$path/{game}") { //WebSocketSession
+    webSocket("$path/{game}") {
         val socket = this
         val gameId = call.parameters["game"]
 
-        val user = call.sessions.get<User>()/* ?: User("player${counter.getAndIncrement()}", "player${counter.get()}", "")*/
+        val user = call.sessions.get<User>()
 
         if (user == null) {
             close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Nicht angemeldet."))
@@ -32,9 +29,22 @@ suspend fun Routing.startSocket(path: String, gamesRef: Atomic<Map<Id, Atomic<Ga
             return@webSocket
         }
 
+        var username = user.username
+        var isMaster = false
         //Create game if it doesn't exist
         val gameRef = gamesRef.modify { games ->
-            val game = games[gameId] ?: loadGameState(gameId)?.let { state -> Atomic.unsafe(GameSession(state)) }
+            val game = games[gameId]
+                ?: loadGameState(gameId)
+                    ?.let { state ->
+                        isMaster = true
+                        username = "master"
+                        Atomic.unsafe(
+                            GameSession(
+                                state.copy(onlinePlayers = listOf(IngamePlayer.Master(username, username))),
+                                connections = mapOf(username to socket)
+                            )
+                        )
+                    }
             if (game == null)
                 Pair(games, null)
             else
@@ -46,18 +56,23 @@ suspend fun Routing.startSocket(path: String, gamesRef: Atomic<Map<Id, Atomic<Ga
             return@webSocket
         }
 
-        val userId = user.user_id
         var playerState: Either<JoiningInteraction, String> =
-            Left(
-                JoiningInteraction(
-                    questions = askPlayer(NewPlayer(userId), gameRef.get().game.config),
-                    currentQuestion = 0,
-                    answers = emptyList()
-                )
-            )
+            with(gameRef.get().game) {
+                if (getOnlinePlayer(username) != null && isMaster) Right(username)
+                else
+                    Left(
+                        JoiningInteraction(
+                            questions = askPlayer(NewPlayer(username), gameRef.get().game.config),
+                            currentQuestion = 0,
+                            answers = emptyList()
+                        )
+                    )
+            }
 
         if (playerState is Either.Left) {
             socket.send(playerState.a.getQuestion())
+        } else if (playerState is Either.Right) {
+           socket.send("Willkommen " + playerState.b)
         }
 
         try {
@@ -66,12 +81,10 @@ suspend fun Routing.startSocket(path: String, gamesRef: Atomic<Map<Id, Atomic<Ga
                     when (playerState) {
                         is Either.Left -> {
                             val interaction = playerState.a
-                            val answer = interaction.parseAnswer(frame.readText(), gameRef.get().game)
-                            when (answer) {
+                            when (val answer = interaction.parseAnswer(frame.readText(), gameRef.get().game)) {
                                 is Either.Left -> socket.send(answer.a)
                                 is Either.Right -> {
-                                    val nextState = answer.b
-                                    when (nextState) {
+                                    when (val nextState = answer.b) {
                                         is Either.Left -> { //Nächste Frage
                                             val nextInteraction = nextState.a
                                             socket.send(nextInteraction.getQuestion())
@@ -84,7 +97,6 @@ suspend fun Routing.startSocket(path: String, gamesRef: Atomic<Map<Id, Atomic<Ga
                                                 { processLogin(avatar, game) },
                                                 GameSession.connections.modify { conns -> conns.plus(avatar.name to socket) }
                                             )
-                                            socket.send("Willkommen, ${avatar.name}")
                                         }
                                     }
                                 }
@@ -109,8 +121,11 @@ suspend fun Routing.startSocket(path: String, gamesRef: Atomic<Map<Id, Atomic<Ga
             e.printStackTrace()
         } finally {
             gameRef.updateSession(
-                { processLogout(game.getOnlinePlayer(userId)!!, game) },
-                GameSession.connections.modify { it - userId }
+                {
+                    game.getOnlinePlayer(username)?.let { processLogout(it, game) }
+                        ?: emptyList<GameAction>() to game
+                },
+                GameSession.connections.modify { it - username }
             )
         }
     }

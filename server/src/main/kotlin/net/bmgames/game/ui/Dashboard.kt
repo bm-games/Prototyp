@@ -9,6 +9,8 @@ import io.ktor.html.*
 import io.ktor.locations.*
 import io.ktor.routing.*
 import kotlinx.html.*
+import net.bmgames.authenticated
+import net.bmgames.configurator.ConfiguratorMain
 import net.bmgames.configurator.Id
 import net.bmgames.game.GameSession
 
@@ -17,29 +19,53 @@ class Dashboard
 
 fun Routing.dashboard(gamesRef: Atomic<Map<Id, Atomic<GameSession>>>) {
     get<Dashboard> {
-        val games = gamesRef.get()
-        call.respondHtml {
-            head {
-                title { +"Dashboard" }
+        authenticated {
+            val games = gamesRef.get()
+            call.respondHtml {
+                head {
+                    title { +"Dashboard" }
 
-            }
-            body {
-                h1 {
-                    +"Dashboard"
                 }
-                games.map { (id, _) ->
+                body {
+                    h1 {
+                        +"Dashboard"
+                    }
+
                     p {
-                        a("/game/$id") {
-                            +id
+                        +"Verfügbare Spiele: "
+                    }
+                    games.map { (id, _) ->
+                        p {
+                            style = "margin-left: 1rem"
+                            a("/game/$id") {
+                                +id
+                            }
                         }
                     }
-                }
-                p {
-                    a("/game/demo") {
-                        +"Create demo game"
+                    p {
+                        +"Verfügbare Konfigurationen: "
                     }
-                }
+                    ConfiguratorMain.allMUDs.filterKeys { !games.containsKey(it) }
+                        .forEach { (name, _) ->
+                            p {
+                                style = "margin-left: 1rem"
+                                a("/game/$name") {
+                                    +"Starte Spiel \"$name\""
+                                }
+                            }
+                        }
+                    p {
+                        a("/config") {
+                            +"Konfiguriere ein eigenes Spiel"
+                        }
+                    }
+                    p {
+                        a("/logout") {
+                            +"Logout"
+                        }
+                    }
 
+                }
             }
         }
     }

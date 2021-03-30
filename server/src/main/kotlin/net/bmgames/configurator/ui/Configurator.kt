@@ -1,111 +1,121 @@
+@file:OptIn(KtorExperimentalLocationsAPI::class)
+
 package net.bmgames.configurator.ui
 
-import io.ktor.html.*
-import kotlinx.html.*
 import io.ktor.application.*
+import io.ktor.html.*
+import io.ktor.locations.*
+import io.ktor.routing.*
+import kotlinx.html.*
+import net.bmgames.authenticated
 
-class Configurator: Template<HTML> {
-    override fun HTML.apply() {
-        head{
-            title { +"Konfigurator" }
-        }
-        body{
-            h1{
-                +"Wilkommen beim MUD-Konfigurator"
-            }
-            div {
-                p { +"MUD-ID eingeben" }
-                textInput { id = "inputMUDId" }
-            }
-            div {
-                div{
-                    h2 { +"Item - Konfigurator" }
-                    p { +"ID:" }
-                    textInput { id = "inputItemId" }
-                    p { +"Name:"}
-                    textInput { id = "inputItemName" }
+@Location("/config")
+class Configurator
+
+fun Route.configPage() {
+    get<Configurator> {
+        authenticated {
+            call.respondHtml {
+                head {
+                    title { +"Konfigurator" }
+                }
+                body {
+                    h1 {
+                        +"Wilkommen beim MUD-Konfigurator"
+                    }
+                    div {
+                        p { +"MUD-ID eingeben" }
+                        textInput { id = "inputMUDId" }
+                    }
+                    div {
+                        div {
+                            h2 { +"Item - Konfigurator" }
+                            p { +"ID:" }
+                            textInput { id = "inputItemId" }
+                            p { +"Name:" }
+                            textInput { id = "inputItemName" }
+                            button {
+                                onClick = "submitItem()"
+                                +"Submit"
+                            }
+                        }
+                        div {
+                            h2 { +"NPC - Konfigurator" }
+                            p { +"ID:" }
+                            textInput { id = "inputNPCId" }
+                            p { +"Typ:" }
+                            textInput { id = "inputNPCType" }
+                            p { +"Name:" }
+                            textInput { id = "inputNPCName" }
+                            p { +"Greeting:" }
+                            textInput { id = "inputNPCGreeting" }
+                            p { +"Items:" }
+                            textInput { id = "inputNPCItems" }
+                            button {
+                                onClick = "submitNPC()"
+                                +"Submit"
+                            }
+                        }
+                        div {
+                            h2 { +"Raum - Konfigurator" }
+                            p { +"ID:" }
+                            textInput { id = "inputRoomId" }
+                            div {
+                                h3 { +"Verbindungen zu anderen Räumen (ID's angeben):" }
+                                p { +"Norden:" }
+                                textInput { id = "inputRoomNorthId" }
+                                p { +"Osten:" }
+                                textInput { id = "inputRoomEastId" }
+                                p { +"Süden:" }
+                                textInput { id = "inputRoomSouthId" }
+                                p { +"Westen:" }
+                                textInput { id = "inputRoomWestId" }
+                            }
+                            p { +"Nachricht:" }
+                            textInput { id = "inputRoomMessage" }
+                            button {
+                                onClick = "submitRoom()"
+                                +"Submit"
+                            }
+                        }
+                        div {
+                            h2 { +"Charakterklassen - Konfigurator" }
+                            p { +"ID:" }
+                            textInput { id = "inputClassId" }
+                            button {
+                                onClick = "submitClass()"
+                                +"Submit"
+                            }
+                        }
+                        div {
+                            h2 { +"Charakterrassen - Konfigurator" }
+                            p { +"ID:" }
+                            textInput { id = "inputRaceId" }
+                            button {
+                                onClick = "submitRace()"
+                                +"Submit"
+                            }
+                        }
+                        div {
+                            h2 { +"Startequipment auswählen" }
+                            textInput { id = "inputStartequipment" }
+                            button {
+                                onClick = "submitStartequipment()"
+                                +"Submit"
+                            }
+                        }
+                        div {
+                            h2 { +"Startraum auswählen" }
+                            textInput { id = "inputStartRoomId" }
+                        }
+                    }
                     button {
-                        onClick = "submitItem()"
-                        +"Submit"
+                        onClick = "backToDashboard()"
+                        +"Speichern und Spiel starten"
                     }
-                }
-                div{
-                    h2 { +"NPC - Konfigurator" }
-                    p { +"ID:" }
-                    textInput { id = "inputNPCId" }
-                    p { +"Typ:" }
-                    textInput { id = "inputNPCType" }
-                    p { +"Name:" }
-                    textInput { id = "inputNPCName" }
-                    p { +"Greeting:" }
-                    textInput { id = "inputNPCGreeting" }
-                    p { +"Items:" }
-                    textInput { id = "inputNPCItems" }
-                    button {
-                        onClick = "submitNPC()"
-                        +"Submit"
-                    }
-                }
-                div{
-                    h2 { +"Raum - Konfigurator" }
-                    p { +"ID:" }
-                    textInput { id = "inputRoomId" }
-                    div{
-                        h3 { +"Verbindungen zu anderen Räumen (ID's angeben):" }
-                        p { +"Norden:" }
-                        textInput { id = "inputRoomNorthId" }
-                        p { +"Osten:" }
-                        textInput { id = "inputRoomEastId" }
-                        p { +"Süden:" }
-                        textInput { id = "inputRoomSouthId" }
-                        p { +"Westen:" }
-                        textInput { id = "inputRoomWestId" }
-                    }
-                    p { +"Nachricht:" }
-                    textInput { id = "inputRoomMessage" }
-                    button {
-                        onClick = "submitRoom()"
-                        +"Submit"
-                    }
-                }
-                div{
-                    h2 { +"Charakterklassen - Konfigurator" }
-                    p { +"ID:" }
-                    textInput { id = "inputClassId" }
-                    button {
-                        onClick = "submitClass()"
-                        +"Submit"
-                    }
-                }
-                div{
-                    h2 { +"Charakterrassen - Konfigurator" }
-                    p { +"ID:" }
-                    textInput { id = "inputRaceId" }
-                    button {
-                        onClick = "submitRace()"
-                        +"Submit"
-                    }
-                }
-                div{
-                    h2 { +"Startequipment auswählen" }
-                    textInput { id = "inputStartequipment" }
-                    button {
-                        onClick = "submitStartequipment()"
-                        +"Submit"
-                    }
-                }
-                div{
-                    h2 { +"Startraum auswählen" }
-                    textInput { id = "inputStartRoomId" }
-                }
-            }
-            button{
-                onClick = "backToDashboard()"
-                +"Speichern und zurück zur Startseite"
-            }
-            unsafe{
-                //language=HTML
-                +"""
+                    unsafe {
+                        //language=HTML
+                        +"""
                         <script>
                             function submitItem() {
                                 let config = {
@@ -249,11 +259,13 @@ class Configurator: Template<HTML> {
                                 // send POST request
                                 fetch("/createMUD", options)
                                     .then(console.log)
-                                    .then(res => window.location.assign("/dashboard"));
+                                    .then(res => window.location.assign("/game/" + config.id));
                                 
                             }
                         </script>
                     """.trimIndent()
+                    }
+                }
             }
         }
     }

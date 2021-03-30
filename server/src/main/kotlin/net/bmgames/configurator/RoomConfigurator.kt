@@ -1,7 +1,5 @@
 package net.bmgames.configurator
 
-import com.google.gson.Gson
-
 class RoomConfigurator {
     companion object{
         var npcList: MutableList<NPCConfig> = mutableListOf<NPCConfig>()
